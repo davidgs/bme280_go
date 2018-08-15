@@ -18,7 +18,7 @@ type BME280 struct {
 // reads the calibration data and sets the device
 // into auto sensing mode
 //
-func (device *BME280) Bme280Init(channel string) int {
+func (device *BME280) bme280Init(channel string) int {
 	//device := BME280{}
 	device.tConfig = make([]int, 3)
 	device.pConfig = make([]int, 9)
@@ -170,7 +170,7 @@ func (device *BME280) Bme280Init(channel string) int {
 // Humidity is express as H * 1024 (10 bit fraction)
 //
 
-func (bme280 *BME280) Bme280ReadValues() []int {
+func (bme280 *BME280) bme280ReadValues() []int {
 	ret := make([]byte, 8)
 	r := []int{-1, -1, -1}
 
