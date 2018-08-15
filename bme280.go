@@ -7,7 +7,7 @@ import (
 )
 
 type BME280 struct {
-	dev     *i2c.Device
+	Dev     *i2c.Device
 	tConfig []int
 	pConfig []int
 	hConfig []int
@@ -18,21 +18,21 @@ type BME280 struct {
 // reads the calibration data and sets the device
 // into auto sensing mode
 //
-func (device *BME280) bme280Init(channel string) int {
+func (device *BME280) Bme280Init(channel string) int {
 	//device := BME280{}
 	device.tConfig = make([]int, 3)
 	device.pConfig = make([]int, 9)
 	device.hConfig = make([]int, 6)
 	ucCal := make([]byte, 36)
 	var err error
-	device.dev, err = i2c.Open(&i2c.Devfs{Dev: channel}, 0x77)
+	device.Dev, err = i2c.Open(&i2c.Devfs{Dev: channel}, 0x77)
 	if err != nil {
 		panic(err)
 	}
 	//defer device.dev.Close()
 	// get ID
 	b := []byte{0x00}
-	err = device.dev.ReadReg(0xD0, b)
+	err = device.Dev.ReadReg(0xD0, b)
 	if err != nil {
 		fmt.Println("Chip ID Err ", err)
 		return -1
@@ -43,7 +43,7 @@ func (device *BME280) bme280Init(channel string) int {
 	}
 	calib1 := make([]byte, 24)
 	// Read 24 bytes of calibration data
-	err = device.dev.ReadReg(0x88, calib1)
+	err = device.Dev.ReadReg(0x88, calib1)
 
 	if err != nil {
 		fmt.Println("calibration data not read correctly", err)
@@ -56,7 +56,7 @@ func (device *BME280) bme280Init(channel string) int {
 	}
 	b = []byte{0x00}
 	// get humidity calibration byte
-	err = device.dev.ReadReg(0xA1, b)
+	err = device.Dev.ReadReg(0xA1, b)
 	if err != nil {
 		fmt.Println("Failed to read humidity calibration byte", err)
 		return -1
@@ -64,7 +64,7 @@ func (device *BME280) bme280Init(channel string) int {
 	ucCal[x] = b[0]
 	x += 1
 	calib2 := make([]byte, 7)
-	err = device.dev.ReadReg(0xE1, calib2)
+	err = device.Dev.ReadReg(0xE1, calib2)
 	if err != nil {
 		fmt.Println("Failed to read humiduty calibration byte 2: ", err)
 		return -1
@@ -139,21 +139,21 @@ func (device *BME280) bme280Init(channel string) int {
 		device.hConfig[5] -= 256
 	}
 	tB := []byte{0xF2, 0x01}
-	err = device.dev.Write(tB)
+	err = device.Dev.Write(tB)
 	if err != nil {
 		fmt.Println("Humidity control error: ", err)
 		return -1
 	}
 	tB[0] = 0xF4
 	tB[1] = 0x27
-	err = device.dev.Write(tB)
+	err = device.Dev.Write(tB)
 	if err != nil {
 		fmt.Println("Measurement mode set error: ", err)
 		return -1
 	}
 	tB[0] = 0xF5
 	tB[1] = 0xA0
-	err = device.dev.Write(tB)
+	err = device.Dev.Write(tB)
 	if err != nil {
 		fmt.Println("Configuration write error: ", err)
 		return -1
@@ -170,11 +170,11 @@ func (device *BME280) bme280Init(channel string) int {
 // Humidity is express as H * 1024 (10 bit fraction)
 //
 
-func (bme280 *BME280) bme280ReadValues() []int {
+func (bme280 *BME280) Bme280ReadValues() []int {
 	ret := make([]byte, 8)
 	r := []int{-1, -1, -1}
 
-	err := bme280.dev.ReadReg(0xF7, ret)
+	err := bme280.Dev.ReadReg(0xF7, ret)
 	if err != nil {
 		fmt.Println("Failed to read Data: ", err)
 		return r
