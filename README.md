@@ -34,3 +34,6 @@ It's a good idea to call
 
 after the call to init so that the device will be closed after you're done with it. 
 
+## Error Handling
+
+There is none at this point. You have to handle them. but if the return array has a -1 for a value in a spot, it's likely that an error occured. Yes, I should probably change this to -256 or something that is highly unlikely to actually occur. 
