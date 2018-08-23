@@ -3,7 +3,6 @@ package bme280_go
 import (
 	"fmt"
 	"golang.org/x/exp/io/i2c"
-	//"golang.org/x/exp/io/i2c/driver"
 )
 
 type BME280 struct {
@@ -35,11 +34,11 @@ func (device *BME280) BME280Init(channel string) int {
 	err = device.Dev.ReadReg(0xD0, b)
 	if err != nil {
 		fmt.Println("Chip ID Err ", err)
-		return -1
+		return -256
 	}
 	if int(b[0]) != 0x60 {
 		fmt.Println("Invalid chip ID! ", b)
-		return -1
+		return -256
 	}
 	calib1 := make([]byte, 24)
 	// Read 24 bytes of calibration data
@@ -47,7 +46,7 @@ func (device *BME280) BME280Init(channel string) int {
 
 	if err != nil {
 		fmt.Println("calibration data not read correctly", err)
-		return -1
+		return -256
 	}
 	x := 0
 	for x < 24 {
@@ -59,7 +58,7 @@ func (device *BME280) BME280Init(channel string) int {
 	err = device.Dev.ReadReg(0xA1, b)
 	if err != nil {
 		fmt.Println("Failed to read humidity calibration byte", err)
-		return -1
+		return -256
 	}
 	ucCal[x] = b[0]
 	x += 1
@@ -67,7 +66,7 @@ func (device *BME280) BME280Init(channel string) int {
 	err = device.Dev.ReadReg(0xE1, calib2)
 	if err != nil {
 		fmt.Println("Failed to read humiduty calibration byte 2: ", err)
-		return -1
+		return -256
 	}
 	y := 0
 	for x < 32 {
@@ -142,21 +141,21 @@ func (device *BME280) BME280Init(channel string) int {
 	err = device.Dev.Write(tB)
 	if err != nil {
 		fmt.Println("Humidity control error: ", err)
-		return -1
+		return -256
 	}
 	tB[0] = 0xF4
 	tB[1] = 0x27
 	err = device.Dev.Write(tB)
 	if err != nil {
 		fmt.Println("Measurement mode set error: ", err)
-		return -1
+		return -256
 	}
 	tB[0] = 0xF5
 	tB[1] = 0xA0
 	err = device.Dev.Write(tB)
 	if err != nil {
 		fmt.Println("Configuration write error: ", err)
-		return -1
+		return -256
 	}
 	return 0
 } /* bme280Init() */
@@ -172,7 +171,7 @@ func (device *BME280) BME280Init(channel string) int {
 
 func (bme280 *BME280) BME280ReadValues() []int {
 	ret := make([]byte, 8)
-	r := []int{-1, -1, -1}
+	r := []int{-256, -256, -256}
 
 	err := bme280.Dev.ReadReg(0xF7, ret)
 	if err != nil {

@@ -13,7 +13,7 @@ Initialize it with the proper device (for the Raspberry Pi 3, this works):
     dev := "/dev/i2c-1"
 	r := bme.bme280Init(dev)
 
-Any return other than -1 is success.
+Any return other than -256 is success.
 
 To read values:
 
@@ -36,4 +36,4 @@ after the call to init so that the device will be closed after you're done with 
 
 ## Error Handling
 
-There is none at this point. You have to handle them. but if the return array has a -1 for a value in a spot, it's likely that an error occured. Yes, I should probably change this to -256 or something that is highly unlikely to actually occur. 
+There is none at this point. You have to handle them. but if the return array has a -256 for a value in a spot, it's likely that an error occured. 
