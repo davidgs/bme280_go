@@ -12,6 +12,12 @@ type BME280 struct {
 	hConfig []int
 }
 
+type BMEData struct {
+	Temperature int
+	Humidity    int
+	Pressure    int
+}
+
 //
 // Opens a file system handle to the I2C device
 // reads the calibration data and sets the device
@@ -169,7 +175,7 @@ func (device *BME280) BME280Init(channel string) int {
 // Humidity is express as H * 1024 (10 bit fraction)
 //
 
-func (bme280 *BME280) BME280ReadValues() []int {
+func (bme280 *BME280) BME280ReadValues() BMEData {
 	ret := make([]byte, 8)
 	r := []int{-256, -256, -256}
 
@@ -219,8 +225,9 @@ func (bme280 *BME280) BME280ReadValues() []int {
 		P_64 = ((P_64 + var1_64 + var2_64) >> 8) + ((uint64(bme280.pConfig[6])) << 4)
 		P = int(P_64 / 100)
 	}
-	r[0] = T
-	r[1] = P
-	r[2] = H
-	return r
+	data := BMEData{}
+	data.Temperature = T
+	data.Pressure = P
+	data.Humidity = H
+	return data
 }
