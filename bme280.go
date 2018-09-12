@@ -6,10 +6,10 @@ import (
 )
 
 type BME280 struct {
-	Dev     *i2c.Device
-	tConfig []int
-	pConfig []int
-	hConfig []int
+	Dev            *i2c.Device
+	tempressConfig [3]int
+	pressConfig    [9]int
+	hConfig        [6]int
 }
 
 type BMEData struct {
@@ -24,10 +24,6 @@ type BMEData struct {
 // into auto sensing mode
 //
 func (device *BME280) BME280Init(channel string) int {
-	//device := BME280{}
-	device.tConfig = make([]int, 3)
-	device.pConfig = make([]int, 9)
-	device.hConfig = make([]int, 6)
 	ucCal := make([]byte, 36)
 	var err error
 	device.Dev, err = i2c.Open(&i2c.Devfs{Dev: channel}, 0x77)
@@ -81,48 +77,48 @@ func (device *BME280) BME280Init(channel string) int {
 		y += 1
 	}
 	// time to set up the calibration
-	device.tConfig[0] = int(ucCal[0]) + (int(ucCal[1]) << 8)
-	device.tConfig[1] = int(ucCal[2]) + (int(ucCal[3]) << 8)
-	if device.tConfig[1] > 32767 {
-		device.tConfig[1] -= 65536
+	device.tempressConfig[0] = int(ucCal[0]) + (int(ucCal[1]) << 8)
+	device.tempressConfig[1] = int(ucCal[2]) + (int(ucCal[3]) << 8)
+	if device.tempressConfig[1] > 32767 {
+		device.tempressConfig[1] -= 65536
 	}
-	device.tConfig[2] = int(ucCal[4]) + (int(ucCal[5]) << 8)
-	if device.tConfig[2] > 32767 {
-		device.tConfig[2] -= 65536
+	device.tempressConfig[2] = int(ucCal[4]) + (int(ucCal[5]) << 8)
+	if device.tempressConfig[2] > 32767 {
+		device.tempressConfig[2] -= 65536
 	}
 	// Prepare pressure calibration data
-	device.pConfig[0] = int(ucCal[6]) + (int(ucCal[7]) << 8)
-	device.pConfig[1] = int(ucCal[8]) + (int(ucCal[9]) << 8)
-	if device.pConfig[1] > 32767 {
-		device.pConfig[1] -= 65536
+	device.pressConfig[0] = int(ucCal[6]) + (int(ucCal[7]) << 8)
+	device.pressConfig[1] = int(ucCal[8]) + (int(ucCal[9]) << 8)
+	if device.pressConfig[1] > 32767 {
+		device.pressConfig[1] -= 65536
 	}
-	device.pConfig[2] = int(ucCal[10]) + (int(ucCal[11]) << 8)
-	if device.pConfig[2] > 32767 {
-		device.pConfig[2] -= 65536
+	device.pressConfig[2] = int(ucCal[10]) + (int(ucCal[11]) << 8)
+	if device.pressConfig[2] > 32767 {
+		device.pressConfig[2] -= 65536
 	}
-	device.pConfig[3] = int(ucCal[12]) + (int(ucCal[13]) << 8)
-	if device.pConfig[3] > 32767 {
-		device.pConfig[3] -= 65536
+	device.pressConfig[3] = int(ucCal[12]) + (int(ucCal[13]) << 8)
+	if device.pressConfig[3] > 32767 {
+		device.pressConfig[3] -= 65536
 	}
-	device.pConfig[4] = int(ucCal[14]) + (int(ucCal[15]) << 8)
-	if device.pConfig[4] > 32767 {
-		device.pConfig[4] -= 65536
+	device.pressConfig[4] = int(ucCal[14]) + (int(ucCal[15]) << 8)
+	if device.pressConfig[4] > 32767 {
+		device.pressConfig[4] -= 65536
 	}
-	device.pConfig[5] = int(ucCal[16]) + (int(ucCal[17]) << 8)
-	if device.pConfig[5] > 32767 {
-		device.pConfig[5] -= 65536
+	device.pressConfig[5] = int(ucCal[16]) + (int(ucCal[17]) << 8)
+	if device.pressConfig[5] > 32767 {
+		device.pressConfig[5] -= 65536
 	}
-	device.pConfig[6] = int(ucCal[18]) + (int(ucCal[19]) << 8)
-	if device.pConfig[6] > 32767 {
-		device.pConfig[6] -= 65536
+	device.pressConfig[6] = int(ucCal[18]) + (int(ucCal[19]) << 8)
+	if device.pressConfig[6] > 32767 {
+		device.pressConfig[6] -= 65536
 	}
-	device.pConfig[7] = int(ucCal[20]) + (int(ucCal[21]) << 8)
-	if device.pConfig[7] > 32767 {
-		device.pConfig[7] -= 65536
+	device.pressConfig[7] = int(ucCal[20]) + (int(ucCal[21]) << 8)
+	if device.pressConfig[7] > 32767 {
+		device.pressConfig[7] -= 65536
 	}
-	device.pConfig[8] = int(ucCal[22]) + (int(ucCal[23]) << 8)
-	if device.pConfig[8] > 32767 {
-		device.pConfig[8] -= 65536
+	device.pressConfig[8] = int(ucCal[22]) + (int(ucCal[23]) << 8)
+	if device.pressConfig[8] > 32767 {
+		device.pressConfig[8] -= 65536
 	}
 	// Prepare humidity calibration data
 	device.hConfig[0] = int(ucCal[24])
@@ -176,13 +172,12 @@ func (device *BME280) BME280Init(channel string) int {
 //
 
 func (bme280 *BME280) BME280ReadValues() BMEData {
-	ret := make([]byte, 8)
-	r := []int{-256, -256, -256}
+	data := BMEData{}
 
 	err := bme280.Dev.ReadReg(0xF7, ret)
 	if err != nil {
 		fmt.Println("Failed to read Data: ", err)
-		return r
+		return data
 	}
 	p := (int(ret[0]) << 12) + (int(ret[1]) << 4) + (int(ret[2]) >> 4)
 	t := (int(ret[3]) << 12) + (int(ret[4]) << 4) + (int(ret[5]) >> 4)
@@ -190,8 +185,8 @@ func (bme280 *BME280) BME280ReadValues() BMEData {
 	//fmt.Println("Raw values: ", p, t, h)
 	// Calculate calibrated temperature value
 	// the value is 100x C (e.g. 2601 = 26.01C)
-	var1 := (((t >> 3) - (bme280.tConfig[0] << 1)) * (bme280.tConfig[1])) >> 11
-	var2 := (((((t >> 4) - (bme280.tConfig[1])) * ((t >> 4) - (bme280.tConfig[0]))) >> 12) * (bme280.tConfig[2])) >> 14
+	var1 := (((t >> 3) - (bme280.tempressConfig[0] << 1)) * (bme280.tempressConfig[1])) >> 11
+	var2 := (((((t >> 4) - (bme280.tempressConfig[1])) * ((t >> 4) - (bme280.tempressConfig[0]))) >> 12) * (bme280.tempressConfig[2])) >> 14
 	t_fine := var1 + var2
 	T := (t_fine*5 + 128) >> 8
 	//fmt.Println("Calibrated Temp: ", T)
@@ -210,22 +205,22 @@ func (bme280 *BME280) BME280ReadValues() BMEData {
 	P := 0
 	// Calculate calibrated pressure value
 	var1_64 := uint64(t_fine - 128000)
-	var2_64 := uint64(var1_64 * var1_64 * uint64(bme280.pConfig[5]))
-	var2_64 = var2_64 + ((var1_64 * uint64(bme280.pConfig[4])) << 17)
-	var2_64 = var2_64 + ((uint64(bme280.pConfig[3])) << 35)
-	var1_64 = ((var1_64 * var1_64 * uint64(bme280.pConfig[2])) >> 8) + ((var1_64 * uint64(bme280.pConfig[1])) << 12)
-	var1_64 = (((1) << 47) + var1_64) * (uint64(bme280.pConfig[0])) >> 33
+	var2_64 := uint64(var1_64 * var1_64 * uint64(bme280.pressConfig[5]))
+	var2_64 = var2_64 + ((var1_64 * uint64(bme280.pressConfig[4])) << 17)
+	var2_64 = var2_64 + ((uint64(bme280.pressConfig[3])) << 35)
+	var1_64 = ((var1_64 * var1_64 * uint64(bme280.pressConfig[2])) >> 8) + ((var1_64 * uint64(bme280.pressConfig[1])) << 12)
+	var1_64 = (((1) << 47) + var1_64) * (uint64(bme280.pressConfig[0])) >> 33
 	if var1_64 == 0 {
 		P = 0
 	} else {
 		P_64 := uint64(1048576 - p)
 		P_64 = (((P_64 << 31) - var2_64) * 3125) / var1_64
-		var1_64 = ((uint64(bme280.pConfig[8])) * (P_64 >> 13) * (P_64 >> 13)) >> 25
-		var2_64 = ((uint64(bme280.pConfig[7])) * P_64) >> 19
-		P_64 = ((P_64 + var1_64 + var2_64) >> 8) + ((uint64(bme280.pConfig[6])) << 4)
+		var1_64 = ((uint64(bme280.pressConfig[8])) * (P_64 >> 13) * (P_64 >> 13)) >> 25
+		var2_64 = ((uint64(bme280.pressConfig[7])) * P_64) >> 19
+		P_64 = ((P_64 + var1_64 + var2_64) >> 8) + ((uint64(bme280.pressConfig[6])) << 4)
 		P = int(P_64 / 100)
 	}
-	data := BMEData{}
+
 	data.Temperature = T
 	data.Pressure = P
 	data.Humidity = H
