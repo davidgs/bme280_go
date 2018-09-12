@@ -173,7 +173,7 @@ func (device *BME280) BME280Init(channel string) int {
 
 func (bme280 *BME280) BME280ReadValues() BMEData {
 	data := BMEData{}
-
+	ret := make([]byte, 8)
 	err := bme280.Dev.ReadReg(0xF7, ret)
 	if err != nil {
 		fmt.Println("Failed to read Data: ", err)
