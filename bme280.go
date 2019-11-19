@@ -43,7 +43,7 @@ func (device *BME280) BME280Init(channel string) int {
 		fmt.Println("Invalid chip ID! ", b)
 		return -256
 	}
-	cB := []byte{0xE0,0xB6}
+	cB := []byte{0xE0, 0xB6}
 	
 	err = device.Dev.Write(cB);
 	if err != nil {
