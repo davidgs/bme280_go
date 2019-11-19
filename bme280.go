@@ -3,6 +3,7 @@ package bme280_go
 import (
 	"fmt"
 	"golang.org/x/exp/io/i2c"
+	"time"
 )
 
 type BME280 struct {
@@ -42,6 +43,11 @@ func (device *BME280) BME280Init(channel string) int {
 		fmt.Println("Invalid chip ID! ", b)
 		return -256
 	}
+	cB := []byte[0xE0,0xB6])
+	
+	err = device.Dev.Write(cB);
+	time.Sleep(300 * time.Milliseconds)
+
 	calib1 := make([]byte, 24)
 	// Read 24 bytes of calibration data
 	err = device.Dev.ReadReg(0x88, calib1)
