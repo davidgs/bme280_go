@@ -50,7 +50,7 @@ func (device *BME280) BME280Init(channel string) int {
 		fmt.Println("Device Reset Failed ", err)
 		return -256
 	}
-	time.Sleep(300 * time.Milliseconds)
+	time.Sleep(300 * time.Millisecond)
 
 	calib1 := make([]byte, 24)
 	// Read 24 bytes of calibration data
