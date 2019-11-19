@@ -3,6 +3,7 @@ package bme280_go
 import (
 	"fmt"
 	"golang.org/x/exp/io/i2c"
+	"time"
 )
 
 type BME280 struct {
@@ -42,6 +43,15 @@ func (device *BME280) BME280Init(channel string) int {
 		fmt.Println("Invalid chip ID! ", b)
 		return -256
 	}
+	cB := []byte[0xE0,0xB6])
+	
+	err = device.Dev.Write(cB);
+	if err != nil {
+		fmt.Println("Device Reset Failed ", err)
+		return -256
+	}
+	time.Sleep(300 * time.Milliseconds)
+
 	calib1 := make([]byte, 24)
 	// Read 24 bytes of calibration data
 	err = device.Dev.ReadReg(0x88, calib1)
@@ -203,7 +213,7 @@ func (bme280 *BME280) BME280ReadValues() BMEData {
 	}
 	H := var1 >> 12
 	P := 0
-	// Calculate calibrated pressure value
+	// Calculate calibrated pressure value	
 	var1_64 := uint64(t_fine - 128000)
 	var2_64 := uint64(var1_64 * var1_64 * uint64(bme280.pressConfig[5]))
 	var2_64 = var2_64 + ((var1_64 * uint64(bme280.pressConfig[4])) << 17)
@@ -218,7 +228,8 @@ func (bme280 *BME280) BME280ReadValues() BMEData {
 		var1_64 = ((uint64(bme280.pressConfig[8])) * (P_64 >> 13) * (P_64 >> 13)) >> 25
 		var2_64 = ((uint64(bme280.pressConfig[7])) * P_64) >> 19
 		P_64 = ((P_64 + var1_64 + var2_64) >> 8) + ((uint64(bme280.pressConfig[6])) << 4)
-		P = int(P_64 / 100)
+		P_64 = P_64 / 256.00
+		P = int(P_64 * 100)
 	}
 
 	data.Temperature = T
