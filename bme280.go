@@ -30,9 +30,9 @@ type BMEData struct {
 //
 func (bme280 *BME280) BME280Init(channel string) int {
 	//device := BME280{}
-	bme280.tempressConfig = make([]int, 3)
-	bme280.pressConfig = make([]int, 9)
-	bme280.hConfig = make([]int, 6)
+	//bme280.tempressConfig = make([]int, 3)
+	//bme280.pressConfig = make([]int, 9)
+	//bme280.hConfig = make([]int, 6)
 	ucCal := make([]byte, 36)
 	var err error
 	bme280.Dev, err = i2c.Open(&i2c.Devfs{Dev: channel}, 0x77)
