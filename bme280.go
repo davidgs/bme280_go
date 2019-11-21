@@ -142,8 +142,9 @@ func  (bme280 *BME280) isReadingCalibration() bool {
 		fmt.Println("Register read error: ", err)
 		return false
 	}
+	var vstat = rStatus[0]
 	const ft = uint8(1 << 0)
-	return (uint8(rStatus[0]) & ft) != 0
+	return uint8(vstat & ft) != 0
 }
 
 func (bme280 *BME280) readCoefficients() int {
