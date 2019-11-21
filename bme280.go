@@ -281,7 +281,7 @@ func (bme280 *BME280) readCoefficients() int {
 // Pressure is <future>
 // Humidity is express as H * 1024 (10 bit fraction)
 //
-func (bme280 *BME280) bme280ReadValues() BMEData {
+func (bme280 *BME280) BME280ReadValues() BMEData {
 	data := BMEData{}
 	
 	data.Temperature = bme280.BME280ReadTemperature()
