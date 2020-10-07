@@ -7,20 +7,25 @@ import (
 	"golang.org/x/exp/io/i2c"
 )
 
-// BME280 holdsw the device and all configuration data for the sensor
+// BME280 holds the device and all configuration data for the sensor
 type BME280 struct {
 	Dev            *i2c.Device
 	Config         bme280Config
 	tempressConfig [3]int
 	pressConfig    [9]int
 	hConfig        [6]int
-	tFine			int32
+	tFine						int32
+	_addr					 int
+
 }
 const (
-    bme280RegisterDigT1 = 0x88
+
+	bme280Address = 0x77
+	bme280AltAddress = 0x76
+  bme280RegisterDigT1 = 0x88
 	bme280RegisterDigT2 = 0x8A
 	bme280RegisterDigT3 = 0x8C
-  
+
 	bme280RegisterDigP1 = 0x8E
 	bme280RegisterDigP2 = 0x90
 	bme280RegisterDigP3 = 0x92
@@ -30,20 +35,20 @@ const (
 	bme280RegisterDigP7 = 0x9A
 	bme280RegisterDigP8 = 0x9C
 	bme280RegisterDigP9 = 0x9E
-  
+
 	bme280RegisterDigH1 = 0xA1
 	bme280RegisterDigH2 = 0xE1
 	bme280RegisterDigH3 = 0xE3
 	bme280RegisterDigH4 = 0xE4
 	bme280RegisterDigH5 = 0xE5
 	bme280RegisterDigH6 = 0xE7
-  
+
 	bme280RegisterChipID = 0xD0
 	bme280RegisterVersion = 0xD1
 	bme280RegisterSoftReset = 0xE0
-  
+
 	bme280RegisterCal26 = 0xE1 // R calibration stored in 0xE1-0xF0
-  
+
 	bme280RegisterControlHumid = 0xF2
 	bme280RegisterStatus = 0xF3
 	bme280RegisterControl= 0xF4
@@ -57,7 +62,7 @@ type bme280Config struct {
 	digT1 uint16///< temperature compensation value
 	digT2 uint16 ///< temperature compensation value
 	digT3 uint16 ///< temperature compensation value
-  
+
 	digP1 uint16///< pressure compensation value
 	digP2 uint16 ///< pressure compensation value
 	digP3 uint16 ///< pressure compensation value
@@ -67,7 +72,7 @@ type bme280Config struct {
 	digP7 uint16  ///< pressure compensation value
 	digP8 uint16  ///< pressure compensation value
 	digP9 uint16  ///< pressure compensation value
-  
+
 	digH1 uint8 ///< humidity compensation value
 	digH2 uint16 ///< humidity compensation value
 	digH3 uint8 ///< humidity compensation value
@@ -88,9 +93,10 @@ type BMEData struct {
 // reads the calibration data and sets the device
 // into auto sensing mode
 //
-func (bme280 *BME280) BME280Init(channel string) int {
+func (bme280 *BME280) BME280Init(channel string, addr int) int {
 	var err error
-	bme280.Dev, err = i2c.Open(&i2c.Devfs{Dev: channel}, 0x77)
+	bme280._addr = addr
+	bme280.Dev, err = i2c.Open(&i2c.Devfs{Dev: channel}, bme280._addr)
 	if err != nil {
 		panic(err)
 	}
@@ -115,7 +121,7 @@ func (bme280 *BME280) BME280Init(channel string) int {
 	time.Sleep(300 * time.Millisecond)
 // if chip is still reading calibration, delay
     for {
-		breaker :=  bme280.isReadingCalibration() 
+		breaker :=  bme280.isReadingCalibration()
 	 	if(breaker){
 			time.Sleep(100 * time.Millisecond)
 		} else {
@@ -150,7 +156,7 @@ func  (bme280 *BME280) isReadingCalibration() bool {
 func (bme280 *BME280) readCoefficients() int {
 	var readByte []byte
 	err := bme280.Dev.ReadReg(bme280RegisterDigT1, readByte)
-	
+
 	if err != nil {
 		fmt.Println("Configuration read error: ", err)
 		return -256
@@ -273,7 +279,7 @@ func (bme280 *BME280) readCoefficients() int {
 	bme280.Config.digH6 = uint8(readByte[0])
 	return 0
   }
-  
+
 //
 // bme280ReadValues Reads the sensor register values
 // and translate them into calibrated readings
@@ -284,15 +290,18 @@ func (bme280 *BME280) readCoefficients() int {
 //
 func (bme280 *BME280) BME280ReadValues() BMEData {
 	data := BMEData{}
-	
+
 	data.Temperature = bme280.BME280ReadTemperature()
 	data.Pressure = bme280.BME280ReadPressure()
 	data.Humidity = bme280.BME280ReadHumidity()
 	data.Altitude = bme280.BME280ReadAltitude(1013.25)
-		
+
 	return data
 }
 
+func (bme280 *BME280) BMESetAddress(addr byte) {
+	bme280._addr = addr
+}
 func (bme280 *BME280) BME280ReadTemperature() float32 {
 	var var1, var2, adcT int32
     var readByte []byte
@@ -305,23 +314,23 @@ func (bme280 *BME280) BME280ReadTemperature() float32 {
 	  return -256.00;
 	}
 	adcT >>= 4;
-  
+
 	var1 = ((((adcT >> 3) - (int32(bme280.Config.digT1 << 1)))) *
 			(int32(bme280.Config.digT2))) >> 11
-  
+
 	var2 = (((((adcT >> 4) - (int32(bme280.Config.digT1))) *
 			  ((adcT >> 4) - (int32(bme280.Config.digT1)))) >> 12) *
 			(int32(bme280.Config.digT3))) >> 14
-  
+
 	bme280.tFine = var1 + var2
-  
+
 	var T = float32((bme280.tFine * 5 + 128) >> 8)
 	return T / 100.00
   }
 
   func (bme280 *BME280) BME280ReadPressure() float32 {
 	var var1, var2, p int64
-  
+
 	_ = bme280.BME280ReadTemperature(); // must be done first to get t_fine
 	var readByte []byte
 	bme280.Dev.ReadReg(bme280RegisterPressureData, readByte)
@@ -333,7 +342,7 @@ func (bme280 *BME280) BME280ReadTemperature() float32 {
 	  return -256.00
 	}
 	adcP >>= 4
-  
+
 	var1 = (int64(bme280.tFine)) - 128000
 	var2 = var1 * var1 * int64(bme280.Config.digP6)
 	var2 = var2 + ((var1 * int64(bme280.Config.digP5)) << 17);
@@ -342,7 +351,7 @@ func (bme280 *BME280) BME280ReadTemperature() float32 {
 		   ((var1 * int64(bme280.Config.digP2)) << 12)
 	var1 =
 		((((int64(1)) << 47) + var1)) * (int64(bme280.Config.digP1)) >> 33
-  
+
 	if (var1 == 0) {
 	  return 0; // avoid exception caused by division by zero
 	}
@@ -350,13 +359,13 @@ func (bme280 *BME280) BME280ReadTemperature() float32 {
 	p = (((p << 31) - var2) * 3125) / var1
 	var1 = ((int64(bme280.Config.digP9)) * (p >> 13) * (p >> 13)) >> 25
 	var2 = ((int64(bme280.Config.digP8)) * p) >> 19
-  
+
 	p = ((p + var1 + var2) >> 8) + ((int64(bme280.Config.digP7)) << 4)
 	return float32(p / 256)
   }
   func (bme280 *BME280) BME280ReadHumidity() float32 {
 	_ = bme280.BME280ReadTemperature(); // must be done first to get t_fine
-	var adcH int32 
+	var adcH int32
 	var readByte []byte
 	bme280.Dev.ReadReg(bme280RegisterHumidData, readByte)
     adcH = int32(readByte[0])
@@ -366,11 +375,11 @@ func (bme280 *BME280) BME280ReadTemperature() float32 {
 	if adcH == 0x8000{ // value in case humidity measurement was disabled
 	  return -256.00
 	}
-  
+
 	var vx1u32r int32
-  
+
 	vx1u32r = (bme280.tFine - (int32(76800)))
-  
+
 	vx1u32r = (((((adcH << 14) - ((int32(bme280.Config.digH4)) << 20) -
 					((int32(bme280.Config.digH5)) * vx1u32r)) +
 				   (int32(16384))) >> 15) *
@@ -379,10 +388,10 @@ func (bme280 *BME280) BME280ReadTemperature() float32 {
 					   (int32(32768)))) >> 10) +
 					(int32(2097152))) *
 					   (int32(bme280.Config.digH2)) + 8192) >> 14))
-  
+
 	vx1u32r = (vx1u32r - (((((vx1u32r >> 15) * (vx1u32r >> 15)) >> 7) *
 							   (int32(bme280.Config.digH1))) >> 4));
-  
+
 	if vx1u32r < 0 {
 		vx1u32r = 0
 	}
@@ -396,15 +405,15 @@ func (bme280 *BME280) BME280ReadTemperature() float32 {
   func (bme280 *BME280) BME280ReadAltitude(seaLevel float32) float32 {
 	// Equation taken from BMP180 datasheet (page 16):
 	//  http://www.adafruit.com/datasheets/BST-BMP180-DS000-09.pdf
-  
+
 	// Note that using the equation from wikipedia can give bad results
 	// at high altitude. See this thread for more information:
 	//  http://forums.adafruit.com/viewtopic.php?f=22&t=58064
-  
+
 	atmospheric := bme280.BME280ReadPressure() / 100.00;
 	return float32(44330.0 * (1.0 - math.Pow(float64(atmospheric / seaLevel), 0.1903)))
   }
-  
+
   /*!
    *   Calculates the pressure at sea level (in hPa) from the specified
    * altitude (in meters), and atmospheric pressure (in hPa).
@@ -415,11 +424,10 @@ func (bme280 *BME280) BME280ReadTemperature() float32 {
   func (bme280 *BME280) BME280SeaLevelForAltitude( altitude float32, atmospheric float32) float32 {
 	// Equation taken from BMP180 datasheet (page 17):
 	//  http://www.adafruit.com/datasheets/BST-BMP180-DS000-09.pdf
-  
+
 	// Note that using the equation from wikipedia can give bad results
 	// at high altitude. See this thread for more information:
 	//  http://forums.adafruit.com/viewtopic.php?f=22&t=58064
-  
+
 	return float32(float64(atmospheric) / math.Pow(float64(1.0 - (altitude / 44330.0)), 5.255))
   }
-  
