@@ -299,7 +299,7 @@ func (bme280 *BME280) BME280ReadValues() BMEData {
 	return data
 }
 
-func (bme280 *BME280) BMESetAddress(addr byte) {
+func (bme280 *BME280) BMESetAddress(addr int) {
 	bme280._addr = addr
 }
 func (bme280 *BME280) BME280ReadTemperature() float32 {
