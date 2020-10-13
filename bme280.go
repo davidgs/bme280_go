@@ -142,7 +142,7 @@ func (bme280 *BME280) BME280Init(channel string, addr int) int {
 } /* bme280Init() */
 
 func  (bme280 *BME280) isReadingCalibration() bool {
-	var rStatus []byte
+	var rStatus = make([]byte,1)
 	err := bme280.Dev.ReadReg(bme280RegisterStatus, rStatus);
 	if err != nil {
 		fmt.Println("Register read error: ", err)
