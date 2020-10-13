@@ -154,7 +154,7 @@ func  (bme280 *BME280) isReadingCalibration() bool {
 }
 
 func (bme280 *BME280) readCoefficients() int {
-	var readByte []byte
+	var readByte = make([]byte, 2)
 	err := bme280.Dev.ReadReg(bme280RegisterDigT1, readByte)
 
 	if err != nil {
@@ -304,7 +304,7 @@ func (bme280 *BME280) BMESetAddress(addr int) {
 }
 func (bme280 *BME280) BME280ReadTemperature() float32 {
 	var var1, var2, adcT int32
-    var readByte []byte
+	var readByte make([]byte, 3)
 	bme280.Dev.ReadReg(bme280RegisterTempData, readByte)
     adcT = int32(readByte[0])
 	adcT = adcT | int32(readByte[1])
@@ -332,7 +332,7 @@ func (bme280 *BME280) BME280ReadTemperature() float32 {
 	var var1, var2, p int64
 
 	_ = bme280.BME280ReadTemperature(); // must be done first to get t_fine
-	var readByte []byte
+	  var readByte make([]byte,3)
 	bme280.Dev.ReadReg(bme280RegisterPressureData, readByte)
     var adcP = int32(readByte[0])
 	adcP = adcP | int32(readByte[1])
@@ -366,7 +366,7 @@ func (bme280 *BME280) BME280ReadTemperature() float32 {
   func (bme280 *BME280) BME280ReadHumidity() float32 {
 	_ = bme280.BME280ReadTemperature(); // must be done first to get t_fine
 	var adcH int32
-	var readByte []byte
+	  var readByte make([]byte,2)
 	bme280.Dev.ReadReg(bme280RegisterHumidData, readByte)
     adcH = int32(readByte[0])
 	adcH = adcH | int32(readByte[1])
